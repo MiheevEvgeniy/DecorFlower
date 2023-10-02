@@ -4,6 +4,9 @@ import ReactDOM from "react-dom/client";
 import * as THREE from "three";
 
 import SceneInit from "./lib/SceneInit";
+import css from "./index.css";
+import {MTLLoader} from 'three-obj-mtl-loader'
+import {OBJLoader} from './lib/OBJLoader';
 
 class App extends React.Component {
   constructor(props) {
@@ -14,91 +17,81 @@ class App extends React.Component {
     const canvas = this.canvasRef.current;
     this.scene = new SceneInit(canvas);
     this.init(this.scene);
+    this.changeFlowersAmount(document.getElementById("flowers_amount").value);
   }
   init(test) {
     test.initialize();
     test.animate();
 
-    const boxGeometry = new THREE.BoxGeometry(3, 16, 3);
-    const boxMaterial = new THREE.MeshNormalMaterial();
-    const boxMesh = new THREE.Mesh(boxGeometry, boxMaterial);
-    boxMesh.name = "box";
-    test.scene.add(boxMesh);
+    let mtlLoader = new MTLLoader();
+    let objLoader = new OBJLoader();
 
-    const sphere1Geometry = new THREE.SphereGeometry(2);
-    const sphere1Material = new THREE.MeshBasicMaterial({
-      color: 0xff0000,
-      wireframe: true,
-    });
-    const sphere1Mesh = new THREE.Mesh(sphere1Geometry, sphere1Material);
-    sphere1Mesh.name = "sphere1";
-    test.scene.add(sphere1Mesh);
-
-    sphere1Mesh.position.x = 3;
-    sphere1Mesh.position.y = 10;
-    sphere1Mesh.position.z = 3;
-
-    const sphere2Geometry = new THREE.SphereGeometry(2);
-    const sphere2Material = new THREE.MeshBasicMaterial({
-      color: 0x00ff00,
-      wireframe: true,
-    });
-    const sphere2Mesh = new THREE.Mesh(sphere2Geometry, sphere2Material);
-    sphere2Mesh.name = "sphere2";
-    test.scene.add(sphere2Mesh);
-
-    sphere2Mesh.position.x = -3;
-    sphere2Mesh.position.y = 10;
-    sphere2Mesh.position.z = 3;
-
-    const sphere3Geometry = new THREE.SphereGeometry(2);
-    const sphere3Material = new THREE.MeshBasicMaterial({
-      color: 0x0000ff,
-      wireframe: true,
-    });
-    const sphere3Mesh = new THREE.Mesh(sphere3Geometry, sphere3Material);
-    sphere3Mesh.name = "sphere3";
-    test.scene.add(sphere3Mesh);
-
-    sphere3Mesh.position.x = 3;
-    sphere3Mesh.position.y = 10;
-    sphere3Mesh.position.z = -3;
+    mtlLoader.load('src/resources/bouquet/paper.mtl', (materials) => {
+      materials.preload()
+      objLoader.setMaterials(materials)
+      objLoader.load('src/resources/bouquet/paper.obj', (object) => {
+        test.scene.add(object)
+      })
+    })
   }
-  changeObject(shapeName) {
-    this.scene.changeObject(shapeName);
+  setSelectedObject(selectedObject) {
+    this.scene.setSelectedObject(selectedObject);
+  }
+  setObjectColor(color) {
+    this.scene.setObjectColor(color);
+  }
+  changeFlowersAmount(amount){
+    this.scene.changeFlowersAmount(amount);
   }
   render() {
+    let buttons = [
+      ["Гербера", "gerbera"],
+      ["Роза", "rose"],
+      ["Лилия", "lily"],
+      ["Хризантема", "chrysantemium"],
+    ];  
+
     return (
-      <div class="canvasContainer">
-        <button
-          id="btn-sphere"
-          name="sphere"
-          onClick={(e) => {
-            this.changeObject(e.target.name);
-          }}
-        >
-          Шар
-        </button>
-        <button
-          id="btn-cone"
-          name="cone"
-          onClick={(e) => {
-            this.changeObject(e.target.name);
-          }}
-        >
-          Конус
-        </button>
-        <button
-          id="btn-ring"
-          name="ring"
-          onClick={(e) => {
-            this.changeObject(e.target.name);
-          }}
-        >
-          Кольцо
-        </button>
+    <div id="workspace">
+      <div id="panel" className="panel">
+        <div id="header">
+          <h3>3D Flowers</h3>
+        </div>
+        <div id="contentWrapper">
+          <div id="inputWrapper">
+            <input placeholder="" type="text" id="filterInput" autoCorrect="off" autoCapitalize="off" spellCheck="false"/>
+          </div>
+          <div className="buttonsContainer">
+            {buttons.map(function(btn, index){
+              return (
+                <button
+                key={index+1}
+                id={"btn-"+(index+1)}
+                name={btn[1]}
+                onClick={
+                  (e) => {
+                  this.setSelectedObject(e.target.name);}
+                }
+              >
+                {btn[0]}
+              </button>
+              )
+            },this)}
+            <input type="range" id="flowers_amount" name="Amount" min="1" max="5" defaultValue={3} 
+             onChange={(e)=>this.changeFlowersAmount(e.target.value)}/>
+            <label id="amount_value" htmlFor="flowers_amount">{this.defaultValue}</label>
+
+            <select id="colors" onChange={(e)=>this.setObjectColor(e.target.value)}>
+              <option value="pink">Pink</option>
+              <option value="white">White</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div className="canvasContainer">
         <canvas id="myCanvas" ref={this.canvasRef} />
       </div>
+    </div>
     );
   }
 }
